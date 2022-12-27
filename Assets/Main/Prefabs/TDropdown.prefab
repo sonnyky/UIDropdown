@@ -219,16 +219,29 @@ MonoBehaviour:
   m_ItemText: {fileID: 7373451262408350999}
   m_ItemImage: {fileID: 0}
   m_Value: 0
-  m_Options:
-    m_Options:
-    - m_Text: Option 1
-      m_Image: {fileID: 0}
-    - m_Text: Option 2
-      m_Image: {fileID: 0}
+  multipleSelectedText: Multiple
+  nothingSelectedText: Nothing
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+  m_OnItemSelected:
+    m_PersistentCalls:
+      m_Calls: []
+  m_OnItemDeselected:
+    m_PersistentCalls:
+      m_Calls: []
   m_AlphaFadeSpeed: 0.15
+  _multiSelect: 0
+  _options:
+  - m_Text: Option1
+    m_Image: {fileID: 0}
+    _isSelected: 1
+  - m_Text: Option2
+    m_Image: {fileID: 0}
+    _isSelected: 0
+  - m_Text: Option3
+    m_Image: {fileID: 0}
+    _isSelected: 0
 --- !u!1 &7373451261269713723
 GameObject:
   m_ObjectHideFlags: 0
@@ -560,7 +573,7 @@ RectTransform:
   m_Children:
   - {fileID: 7373451261239688078}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -695,7 +708,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Option 1
+  m_text: Option1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
