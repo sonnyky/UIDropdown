@@ -37,7 +37,6 @@ namespace Tinker
             public Image image { get { return m_Image; } set { m_Image = value; } }
             public RectTransform rectTransform { get { return m_RectTransform; } set { m_RectTransform = value; } }
             public Toggle toggle { get { return m_Toggle; } set { m_Toggle = value; } }
-
             public virtual void OnPointerEnter(PointerEventData eventData)
             {
                 EventSystem.current.SetSelectedGameObject(gameObject);
@@ -113,6 +112,16 @@ namespace Tinker
             }
 
         }
+
+
+        [SerializeField]
+        private GameObject tempCaptionHolderGO;
+
+        [SerializeField]
+        private TMP_Text tempCaption;
+
+        [SerializeField]
+        private Button selectAllButton;
 
         [Serializable]
         /// <summary>
@@ -437,6 +446,7 @@ namespace Tinker
 
         void SetValue(uint value, bool sendCallback = true)
         {
+           
             if (Application.isPlaying && (value == m_Value || Options.Count == 0))
                 return;
 
@@ -446,16 +456,21 @@ namespace Tinker
                 uint removedMask = m_Value & ~value;
                 UpdateOptionsState(addedMask, removedMask);
             }
+            else
+            {
+                m_OnItemDeselected.Invoke(m_Value);
+                m_OnItemSelected.Invoke(value);
+
+            }
 
             m_Value = value;
             RefreshShownValue();
 
-            if (sendCallback)
-            {
-                // Notify all listeners
-                UISystemProfilerApi.AddMarker("Dropdown.value", this);
-                m_OnValueChanged.Invoke(m_Value);
-            }
+           
+            // Notify all listeners
+            UISystemProfilerApi.AddMarker("Dropdown.value", this);
+            m_OnValueChanged.Invoke(m_Value);
+            
         }
 
         protected virtual void UpdateOptionsState(uint added, uint removed)
@@ -501,6 +516,9 @@ namespace Tinker
 
             if (m_Template)
                 m_Template.gameObject.SetActive(false);
+
+            if (tempCaptionHolderGO)
+                tempCaptionHolderGO.SetActive(false);
         }
 
         protected override void Start()
@@ -588,7 +606,6 @@ namespace Tinker
         /// </remarks>
         public void RefreshShownValue()
         {
-            Debug.Log(Options.Count);
             if (0 == Options.Count)
             {
                 if (m_CaptionText != null)
@@ -664,6 +681,7 @@ namespace Tinker
                         m_CaptionText.text = !string.IsNullOrEmpty(allSelectedOptionsText) ? allSelectedOptionsText : "";
                     }
                 }
+                tempCaption.text = m_CaptionText.text;
 
                 if (m_CaptionImage != null)
                 {
@@ -940,6 +958,7 @@ namespace Tinker
             }
 
             m_Template.gameObject.SetActive(true);
+            tempCaptionHolderGO.SetActive(true);
 
             // popupCanvas used to assume the root canvas had the default sorting Layer, next line fixes (case 958281 - [UI] Dropdown list does not copy the parent canvas layer when the panel is opened)
             m_Template.GetComponent<Canvas>().sortingLayerID = rootCanvas.sortingLayerID;
@@ -982,7 +1001,7 @@ namespace Tinker
                     continue;
 
                 // Automatically set up a toggle state change listener
-                item.toggle.isOn = value == i;
+                item.toggle.isOn = data.Selected;
                 item.toggle.onValueChanged.AddListener(x => OnSelectItem(item.toggle));
 
                 // Select current option
@@ -1299,7 +1318,7 @@ namespace Tinker
         // Change the value and hide the dropdown.
         private void OnSelectItem(Toggle toggle)
         {
-            if (!toggle.isOn)
+            if (!toggle.isOn && !AllowMultiSelect)
                 toggle.isOn = true;
 
             int selectedIndex = -1;
@@ -1316,7 +1335,6 @@ namespace Tinker
             }
             if (selectedIndex < 0)
                 return;
-
             if (toggle.isOn)
             {
                 if (AllowMultiSelect)

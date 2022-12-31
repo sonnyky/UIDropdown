@@ -1191,6 +1191,11 @@ PrefabInstance:
     serializedVersion: 2
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 7373451261239688078, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 127.26
+      objectReference: {fileID: 0}
     - target: {fileID: 7373451261661985544, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1300,6 +1305,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: TDropdown
+      objectReference: {fileID: 0}
+    - target: {fileID: 8686926211235158695, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
