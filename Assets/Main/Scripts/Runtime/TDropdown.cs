@@ -510,7 +510,8 @@ namespace Tinker
             if (!Application.isPlaying)
                 return;
 #endif
-
+            selectAllButton.onClick.AddListener(SelectAll);
+            Debug.Log("Set select all button");
             if (m_CaptionImage)
                 m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
 
@@ -958,7 +959,6 @@ namespace Tinker
             }
 
             m_Template.gameObject.SetActive(true);
-            tempCaptionHolderGO.SetActive(true);
 
             // popupCanvas used to assume the root canvas had the default sorting Layer, next line fixes (case 958281 - [UI] Dropdown list does not copy the parent canvas layer when the panel is opened)
             m_Template.GetComponent<Canvas>().sortingLayerID = rootCanvas.sortingLayerID;
@@ -1078,6 +1078,9 @@ namespace Tinker
             itemTemplate.gameObject.SetActive(false);
 
             m_Blocker = CreateBlocker(rootCanvas);
+            if (AllowMultiSelect)
+                tempCaptionHolderGO.transform.SetParent(m_Blocker.transform);
+                tempCaptionHolderGO.SetActive(true);
         }
 
         /// <summary>
@@ -1279,6 +1282,12 @@ namespace Tinker
                     // User could have disabled the dropdown during the OnValueChanged call.
                     if (IsActive())
                         m_Coroutine = StartCoroutine(DelayedDestroyDropdownList(m_AlphaFadeSpeed));
+
+                    if (AllowMultiSelect)
+                    {
+                        tempCaptionHolderGO.transform.SetParent(transform);
+                        tempCaptionHolderGO.SetActive(false);
+                    }
                 }
 
                 if (m_Blocker != null)
@@ -1349,7 +1358,22 @@ namespace Tinker
                 else
                     value = (uint)selectedIndex;
             }
-            Hide();
+            //Hide();
+        }
+
+        private void SelectAll()
+        {
+            int numOfOptions = Options.Count;
+            string val = "";
+            for (int i = 0; i < _options.Count; i++)
+            {
+                val += "1";
+                _options[i].Selected = true;
+                m_Items[i].toggle.isOn = true;
+            }
+            value = (uint) Convert.ToInt32(val, 2);
+            Debug.Log("value after conversion : " + value);
+            RefreshShownValue();
         }
     }
 }

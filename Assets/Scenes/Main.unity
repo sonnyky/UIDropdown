@@ -1191,6 +1191,16 @@ PrefabInstance:
     serializedVersion: 2
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2832700539688801643, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 350
+      objectReference: {fileID: 0}
+    - target: {fileID: 7373451261239688078, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 350
+      objectReference: {fileID: 0}
     - target: {fileID: 7373451261239688078, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
         type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1309,7 +1319,7 @@ PrefabInstance:
     - target: {fileID: 8686926211235158695, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
