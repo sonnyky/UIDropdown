@@ -1283,11 +1283,10 @@ namespace Tinker
                     if (IsActive())
                         m_Coroutine = StartCoroutine(DelayedDestroyDropdownList(m_AlphaFadeSpeed));
 
-                    if (AllowMultiSelect)
-                    {
-                        tempCaptionHolderGO.transform.SetParent(transform);
-                        tempCaptionHolderGO.SetActive(false);
-                    }
+                    
+                    tempCaptionHolderGO.transform.SetParent(transform);
+                    tempCaptionHolderGO.SetActive(false);
+                    
                 }
 
                 if (m_Blocker != null)
@@ -1358,7 +1357,9 @@ namespace Tinker
                 else
                     value = (uint)selectedIndex;
             }
-            //Hide();
+
+            if (!AllowMultiSelect)
+                Hide();
         }
 
         private void SelectAll()
