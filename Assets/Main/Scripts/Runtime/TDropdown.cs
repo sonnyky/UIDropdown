@@ -37,7 +37,6 @@ namespace Tinker
             public Image image { get { return m_Image; } set { m_Image = value; } }
             public RectTransform rectTransform { get { return m_RectTransform; } set { m_RectTransform = value; } }
             public Toggle toggle { get { return m_Toggle; } set { m_Toggle = value; } }
-
             public virtual void OnPointerEnter(PointerEventData eventData)
             {
                 EventSystem.current.SetSelectedGameObject(gameObject);
@@ -61,6 +60,8 @@ namespace Tinker
             private string m_Text;
             [SerializeField]
             private Sprite m_Image;
+            [SerializeField]
+            private bool _isSelected;
 
             /// <summary>
             /// The text associated with the option.
@@ -71,6 +72,8 @@ namespace Tinker
             /// The image associated with the option.
             /// </summary>
             public Sprite image { get { return m_Image; } set { m_Image = value; } }
+
+            public bool Selected { get => _isSelected; internal set => _isSelected = value; }
 
             public OptionData() { }
 
@@ -94,37 +97,37 @@ namespace Tinker
                 this.text = text;
                 this.image = image;
             }
-        }
 
-        [Serializable]
-        /// <summary>
-        /// Class used internally to store the list of options for the dropdown list.
-        /// </summary>
-        /// <remarks>
-        /// The usage of this class is not exposed in the runtime API. It's only relevant for the PropertyDrawer drawing the list of options.
-        /// </remarks>
-        public class OptionDataList
-        {
-            [SerializeField]
-            private List<OptionData> m_Options;
-
-            /// <summary>
-            /// The list of options for the dropdown list.
-            /// </summary>
-            public List<OptionData> options { get { return m_Options; } set { m_Options = value; } }
-
-
-            public OptionDataList()
+            public OptionData(string text, bool selected)
             {
-                options = new List<OptionData>();
+                this.text = text;
+                this.Selected = selected;
             }
+
+            public OptionData(string text, Sprite image, bool Selected)
+            {
+                this.text = text;
+                this.image = image;
+                this.Selected = Selected;
+            }
+
         }
+
+
+        [SerializeField]
+        private GameObject tempCaptionHolderGO;
+
+        [SerializeField]
+        private TMP_Text tempCaption;
+
+        [SerializeField]
+        private Button selectAllButton;
 
         [Serializable]
         /// <summary>
         /// UnityEvent callback for when a dropdown current option is changed.
         /// </summary>
-        public class DropdownEvent : UnityEvent<int> { }
+        public class DropdownEvent : UnityEvent<uint> { }
 
         // Template used to create the dropdown.
         [SerializeField]
@@ -181,14 +184,16 @@ namespace Tinker
         [Space]
 
         [SerializeField]
-        private int m_Value;
+        private uint m_Value;
 
         [Space]
 
+        public string multipleSelectedText = "Multiple";
+        public string nothingSelectedText = "Nothing";
+
         // Items that will be visible when the dropdown is shown.
         // We box this into its own class so we can use a Property Drawer for it.
-        [SerializeField]
-        private OptionDataList m_Options = new OptionDataList();
+       
 
         /// <summary>
         /// The list of possible options. A text string and an image can be specified for each option.
@@ -281,18 +286,17 @@ namespace Tinker
         /// }
         /// </code>
         /// </example>
-        public List<OptionData> options
-        {
-            get { return m_Options.options; }
-            set { m_Options.options = value; RefreshShownValue(); }
-        }
-
+      
         [Space]
 
         // Notification triggered when the dropdown changes.
         [SerializeField]
         private DropdownEvent m_OnValueChanged = new DropdownEvent();
 
+        [SerializeField]
+        private DropdownEvent m_OnItemSelected = new DropdownEvent();
+        [SerializeField]
+        private DropdownEvent m_OnItemDeselected = new DropdownEvent();
         /// <summary>
         /// A UnityEvent that is invoked when a user has clicked one of the options in the dropdown list.
         /// </summary>
@@ -335,6 +339,8 @@ namespace Tinker
         /// </code>
         /// </example>
         public DropdownEvent onValueChanged { get { return m_OnValueChanged; } set { m_OnValueChanged = value; } }
+        public DropdownEvent onItemSelected { get { return m_OnItemSelected; } set { m_OnItemSelected = value; } }
+        public DropdownEvent onItemDeselected { get { return m_OnItemDeselected; } set { m_OnItemDeselected = value; } }
 
         [SerializeField]
         private float m_AlphaFadeSpeed = 0.15f;
@@ -396,12 +402,9 @@ namespace Tinker
         /// }
         /// </code>
         /// </example>
-        public int value
+        public uint value
         {
-            get
-            {
-                return m_Value;
-            }
+            get => m_Value;
             set
             {
                 SetValue(value);
@@ -409,27 +412,91 @@ namespace Tinker
         }
 
         /// <summary>
+        /// Added multi selection support
+        /// </summary>
+        /// 
+        [Header("Multi select support")]
+        [SerializeField]
+        private bool _multiSelect = false;
+
+        [SerializeField]
+        public bool AllowMultiSelect
+        {
+            get => _multiSelect;
+            set 
+            {
+                _multiSelect = value;
+                this.value = 0;
+                RefreshShownValue();
+            }
+        }
+
+        [SerializeField]
+        private List<OptionData> _options = new List<OptionData>();
+        public IReadOnlyList<OptionData> Options => _options;
+
+        /// <summary>
         /// Set index number of the current selection in the Dropdown without invoking onValueChanged callback.
         /// </summary>
         /// <param name="input">The new index for the current selection.</param>
-        public void SetValueWithoutNotify(int input)
+        public void SetValueWithoutNotify(uint input)
         {
             SetValue(input, false);
         }
 
-        void SetValue(int value, bool sendCallback = true)
+        void SetValue(uint value, bool sendCallback = true)
         {
-            if (Application.isPlaying && (value == m_Value || options.Count == 0))
+           
+            if (Application.isPlaying && (value == m_Value || Options.Count == 0))
                 return;
 
-            m_Value = Mathf.Clamp(value, m_Placeholder ? -1 : 0, options.Count - 1);
+            if(AllowMultiSelect)
+            {
+                uint addedMask = ~m_Value & value;
+                uint removedMask = m_Value & ~value;
+                UpdateOptionsState(addedMask, removedMask);
+            }
+            else
+            {
+                m_OnItemDeselected.Invoke(m_Value);
+                m_OnItemSelected.Invoke(value);
+
+            }
+
+            m_Value = value;
             RefreshShownValue();
 
-            if (sendCallback)
+           
+            // Notify all listeners
+            UISystemProfilerApi.AddMarker("Dropdown.value", this);
+            m_OnValueChanged.Invoke(m_Value);
+            
+        }
+
+        protected virtual void UpdateOptionsState(uint added, uint removed)
+        {
+            uint index = 0;
+            while(added > 0)
             {
-                // Notify all listeners
-                UISystemProfilerApi.AddMarker("Dropdown.value", this);
-                m_OnValueChanged.Invoke(m_Value);
+                if((added & 0x01) == 0x01)
+                {
+                    Options[(int)index].Selected = true;
+                    m_OnItemSelected.Invoke(index);
+                }
+                index++;
+                added >>= 0x01;
+            }
+
+            index = 0;
+            while(removed > 0)
+            {
+                if((removed & 0x01) == 0x01)
+                {
+                    Options[(int)index].Selected = false;
+                    m_OnItemDeselected.Invoke(index);
+                }
+                index++;
+                removed >>= 0x01;
             }
         }
 
@@ -443,12 +510,16 @@ namespace Tinker
             if (!Application.isPlaying)
                 return;
 #endif
-
+            selectAllButton.onClick.AddListener(SelectAll);
+            Debug.Log("Set select all button");
             if (m_CaptionImage)
                 m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
 
             if (m_Template)
                 m_Template.gameObject.SetActive(false);
+
+            if (tempCaptionHolderGO)
+                tempCaptionHolderGO.SetActive(false);
         }
 
         protected override void Start()
@@ -485,6 +556,49 @@ namespace Tinker
             base.OnDisable();
         }
 
+        public IEnumerable<OptionData> SelectedOptions
+        {
+            get
+            {
+                foreach (var option in Options)
+                    if (option.Selected)
+                        yield return option;
+            }
+        }
+
+        public uint SelectedCount
+        {
+            get
+            {
+                //if in single selection mode, there is always one selected
+                if (!AllowMultiSelect)
+                    return 1;
+                return CountBits(m_Value);
+            }
+        }
+
+        private uint IndexOfBit(uint src)
+        {
+            var i = 0u;
+            while (src > 1)
+            {
+                src >>= 1;
+                i++;
+            }
+            return i;
+        }
+
+        private uint CountBits(uint v)
+        {
+            uint c;
+            for (c = 0; v > 0; c++)
+            {
+                v &= v - 1;
+              
+            }
+            return c;
+        }
+
         /// <summary>
         /// Refreshes the text and image (if available) of the currently selected option.
         /// </summary>
@@ -493,31 +607,101 @@ namespace Tinker
         /// </remarks>
         public void RefreshShownValue()
         {
-            OptionData data = s_NoOptionData;
-
-            if (options.Count > 0 && m_Value >= 0)
-                data = options[Mathf.Clamp(m_Value, 0, options.Count - 1)];
-
-            if (m_CaptionText)
+            if (0 == Options.Count)
             {
-                if (data != null && data.text != null)
-                    m_CaptionText.text = data.text;
-                else
-                    m_CaptionText.text = "";
+                if (m_CaptionText != null)
+                    m_CaptionText.text = !string.IsNullOrEmpty(s_NoOptionData.text) ? s_NoOptionData.text : "";
+                if (m_CaptionImage != null)
+                {
+                    m_CaptionImage.sprite = s_NoOptionData.image;
+                    m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
+                }
             }
-
-            if (m_CaptionImage)
+            else
             {
-                if (data != null)
-                    m_CaptionImage.sprite = data.image;
+                OptionData data = null;
+                uint itemCount = 1;
+                for (int i = 0; i < Options.Count; i++)
+                {
+                    Options[i].Selected = false;
+                }
+
+                if (AllowMultiSelect)
+                {
+                    itemCount = this.SelectedCount;
+                    if (1 == itemCount)
+                    {
+                        var i = (int)IndexOfBit(m_Value);
+                        data = Options[i];
+                        data.Selected = true;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < Options.Count; i++)
+                        {
+                            int mask = 1 << i;
+                            Options[i].Selected = ((m_Value & mask) == mask);
+                        }
+                    }
+                }
                 else
-                    m_CaptionImage.sprite = null;
-                m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
-            }
+                {
+                    data = Options[(int)m_Value];
+                    data.Selected = true;
+                }
 
-            if (m_Placeholder)
-            {
-                m_Placeholder.enabled = options.Count == 0 || m_Value == -1;
+                /// Depending on the number of optionss selected, set the displayed caption text and image
+                string allSelectedOptionsText = "";
+                if (m_CaptionText != null)
+                {
+                    if (0 == itemCount)
+                    {
+                        m_CaptionText.text = !string.IsNullOrEmpty(nothingSelectedText) ? nothingSelectedText : "";
+                    }
+                    else if (1 == itemCount)
+                    {
+                        m_CaptionText.text = !string.IsNullOrEmpty(data.text) ? data.text : "";
+                    }
+                    else
+                    {
+                        var enumerator = SelectedOptions.GetEnumerator();
+                        int count = 0;
+                        while (enumerator.MoveNext())
+                        {
+                            if (count < 2)
+                            {
+                                allSelectedOptionsText += enumerator.Current.text + ", ";
+                                count++;
+                            }
+                            else
+                            {
+                                allSelectedOptionsText += " and " + (itemCount - 2).ToString() + " more";
+                                break;
+                            }
+                        }
+                        m_CaptionText.text = !string.IsNullOrEmpty(allSelectedOptionsText) ? allSelectedOptionsText : "";
+                    }
+                }
+                tempCaption.text = m_CaptionText.text;
+
+                if (m_CaptionImage != null)
+                {
+                    if(0 == itemCount)
+                    {
+                        m_CaptionImage.sprite = null;
+                        m_CaptionImage.enabled = false;
+                    }
+                    else if(1 == itemCount)
+                    {
+                        m_CaptionImage.sprite = data.image;
+                        m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
+                    }
+                    else
+                    {
+                        m_CaptionImage.sprite = null;
+                        m_CaptionImage.enabled = false;
+                    }
+                }
             }
         }
 
@@ -530,7 +714,7 @@ namespace Tinker
         /// </remarks>
         public void AddOptions(List<OptionData> options)
         {
-            this.options.AddRange(options);
+            this._options.AddRange(options);
             RefreshShownValue();
         }
 
@@ -572,7 +756,7 @@ namespace Tinker
         public void AddOptions(List<string> options)
         {
             for (int i = 0; i < options.Count; i++)
-                this.options.Add(new OptionData(options[i]));
+                this._options.Add(new OptionData(options[i]));
 
             RefreshShownValue();
         }
@@ -587,7 +771,7 @@ namespace Tinker
         public void AddOptions(List<Sprite> options)
         {
             for (int i = 0; i < options.Count; i++)
-                this.options.Add(new OptionData(options[i]));
+                this._options.Add(new OptionData(options[i]));
 
             RefreshShownValue();
         }
@@ -597,8 +781,8 @@ namespace Tinker
         /// </summary>
         public void ClearOptions()
         {
-            options.Clear();
-            m_Value = m_Placeholder ? -1 : 0;
+            this._options.Clear();
+            m_Value = m_Placeholder ? (uint) 200 : 0;
             RefreshShownValue();
         }
 
@@ -809,15 +993,15 @@ namespace Tinker
             m_Items.Clear();
 
             Toggle prev = null;
-            for (int i = 0; i < options.Count; ++i)
+            for (int i = 0; i < Options.Count; ++i)
             {
-                OptionData data = options[i];
+                OptionData data = Options[i];
                 DropdownItem item = AddItem(data, value == i, itemTemplate, m_Items);
                 if (item == null)
                     continue;
 
                 // Automatically set up a toggle state change listener
-                item.toggle.isOn = value == i;
+                item.toggle.isOn = data.Selected;
                 item.toggle.onValueChanged.AddListener(x => OnSelectItem(item.toggle));
 
                 // Select current option
@@ -894,6 +1078,9 @@ namespace Tinker
             itemTemplate.gameObject.SetActive(false);
 
             m_Blocker = CreateBlocker(rootCanvas);
+            if (AllowMultiSelect)
+                tempCaptionHolderGO.transform.SetParent(m_Blocker.transform);
+                tempCaptionHolderGO.SetActive(true);
         }
 
         /// <summary>
@@ -1095,6 +1282,12 @@ namespace Tinker
                     // User could have disabled the dropdown during the OnValueChanged call.
                     if (IsActive())
                         m_Coroutine = StartCoroutine(DelayedDestroyDropdownList(m_AlphaFadeSpeed));
+
+                    if (AllowMultiSelect)
+                    {
+                        tempCaptionHolderGO.transform.SetParent(transform);
+                        tempCaptionHolderGO.SetActive(false);
+                    }
                 }
 
                 if (m_Blocker != null)
@@ -1134,7 +1327,7 @@ namespace Tinker
         // Change the value and hide the dropdown.
         private void OnSelectItem(Toggle toggle)
         {
-            if (!toggle.isOn)
+            if (!toggle.isOn && !AllowMultiSelect)
                 toggle.isOn = true;
 
             int selectedIndex = -1;
@@ -1149,12 +1342,38 @@ namespace Tinker
                     break;
                 }
             }
-
             if (selectedIndex < 0)
                 return;
+            if (toggle.isOn)
+            {
+                if (AllowMultiSelect)
+                    value |= 1u << selectedIndex;
+                else
+                    value = (uint)selectedIndex;
+            }
+            else
+            {
+                if (AllowMultiSelect)
+                    value &= ~(1u << selectedIndex);
+                else
+                    value = (uint)selectedIndex;
+            }
+            //Hide();
+        }
 
-            value = selectedIndex;
-            Hide();
+        private void SelectAll()
+        {
+            int numOfOptions = Options.Count;
+            string val = "";
+            for (int i = 0; i < _options.Count; i++)
+            {
+                val += "1";
+                _options[i].Selected = true;
+                m_Items[i].toggle.isOn = true;
+            }
+            value = (uint) Convert.ToInt32(val, 2);
+            Debug.Log("value after conversion : " + value);
+            RefreshShownValue();
         }
     }
 }
