@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc97361db0aca6b478ee5ed6b5334c47, type: 3}
   m_Name: DropdownPrefabManager
   m_EditorClassIdentifier: 
-  TDropdown: {fileID: 7373451261661985780, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
+  TDropdown: {fileID: 5241380631952204144, guid: 7ec85fa9c94cc6f4d95118a6d30f9376,
     type: 3}

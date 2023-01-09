@@ -604,7 +604,7 @@ namespace Tinker
         /// </summary>
         /// <remarks>
         /// If you have modified the list of options, you should call this method afterwards to ensure that the visual state of the dropdown corresponds to the updated options.
-        /// </remarks>
+        /// </remarks>s
         public void RefreshShownValue()
         {
             if (0 == Options.Count)
@@ -1078,9 +1078,8 @@ namespace Tinker
             itemTemplate.gameObject.SetActive(false);
 
             m_Blocker = CreateBlocker(rootCanvas);
-            if (AllowMultiSelect)
-                tempCaptionHolderGO.transform.SetParent(m_Blocker.transform);
-                tempCaptionHolderGO.SetActive(true);
+            
+            tempCaptionHolderGO.SetActive(true);
         }
 
         /// <summary>
@@ -1283,10 +1282,7 @@ namespace Tinker
                     if (IsActive())
                         m_Coroutine = StartCoroutine(DelayedDestroyDropdownList(m_AlphaFadeSpeed));
 
-                    
-                    tempCaptionHolderGO.transform.SetParent(transform);
                     tempCaptionHolderGO.SetActive(false);
-                    
                 }
 
                 if (m_Blocker != null)
