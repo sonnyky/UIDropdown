@@ -438,7 +438,7 @@ namespace Tinker
         /// <summary>
         /// Set index number of the current selection in the Dropdown without invoking onValueChanged callback.
         /// </summary>
-        /// <param name="input">The new index for the current selection.</param>
+        /// <param name="input">The new index for the cuarent selection.</param>
         public void SetValueWithoutNotify(uint input)
         {
             SetValue(input, false);
@@ -511,6 +511,8 @@ namespace Tinker
                 return;
 #endif
             selectAllButton.onClick.AddListener(SelectAll);
+            selectAllButton.gameObject.SetActive(AllowMultiSelect);
+
             Debug.Log("Set select all button");
             if (m_CaptionImage)
                 m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
@@ -649,8 +651,9 @@ namespace Tinker
                     data = Options[(int)m_Value];
                     data.Selected = true;
                 }
+                selectAllButton.gameObject.SetActive(AllowMultiSelect);
 
-                /// Depending on the number of optionss selected, set the displayed caption text and image
+                /// Depending on the number of optionss selNected, set the displayed caption text and image
                 string allSelectedOptionsText = "";
                 if (m_CaptionText != null)
                 {
