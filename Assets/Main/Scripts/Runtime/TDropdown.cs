@@ -438,7 +438,7 @@ namespace Tinker
         /// <summary>
         /// Set index number of the current selection in the Dropdown without invoking onValueChanged callback.
         /// </summary>
-        /// <param name="input">The new index for the current selection.</param>
+        /// <param name="input">The new index for the cuarent selection.</param>
         public void SetValueWithoutNotify(uint input)
         {
             SetValue(input, false);
@@ -511,6 +511,8 @@ namespace Tinker
                 return;
 #endif
             selectAllButton.onClick.AddListener(SelectAll);
+            selectAllButton.gameObject.SetActive(AllowMultiSelect);
+
             Debug.Log("Set select all button");
             if (m_CaptionImage)
                 m_CaptionImage.enabled = (m_CaptionImage.sprite != null);
@@ -604,7 +606,7 @@ namespace Tinker
         /// </summary>
         /// <remarks>
         /// If you have modified the list of options, you should call this method afterwards to ensure that the visual state of the dropdown corresponds to the updated options.
-        /// </remarks>
+        /// </remarks>s
         public void RefreshShownValue()
         {
             if (0 == Options.Count)
@@ -649,8 +651,9 @@ namespace Tinker
                     data = Options[(int)m_Value];
                     data.Selected = true;
                 }
+                selectAllButton.gameObject.SetActive(AllowMultiSelect);
 
-                /// Depending on the number of optionss selected, set the displayed caption text and image
+                /// Depending on the number of optionss selNected, set the displayed caption text and image
                 string allSelectedOptionsText = "";
                 if (m_CaptionText != null)
                 {
@@ -1078,9 +1081,8 @@ namespace Tinker
             itemTemplate.gameObject.SetActive(false);
 
             m_Blocker = CreateBlocker(rootCanvas);
-            if (AllowMultiSelect)
-                tempCaptionHolderGO.transform.SetParent(m_Blocker.transform);
-                tempCaptionHolderGO.SetActive(true);
+            
+            tempCaptionHolderGO.SetActive(true);
         }
 
         /// <summary>
@@ -1283,11 +1285,7 @@ namespace Tinker
                     if (IsActive())
                         m_Coroutine = StartCoroutine(DelayedDestroyDropdownList(m_AlphaFadeSpeed));
 
-                    if (AllowMultiSelect)
-                    {
-                        tempCaptionHolderGO.transform.SetParent(transform);
-                        tempCaptionHolderGO.SetActive(false);
-                    }
+                    tempCaptionHolderGO.SetActive(false);
                 }
 
                 if (m_Blocker != null)
@@ -1358,7 +1356,9 @@ namespace Tinker
                 else
                     value = (uint)selectedIndex;
             }
-            //Hide();
+
+            if (!AllowMultiSelect)
+                Hide();
         }
 
         private void SelectAll()
